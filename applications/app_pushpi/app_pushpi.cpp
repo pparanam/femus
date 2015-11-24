@@ -177,9 +177,9 @@ void AssemblePoissonProblem(MultiLevelProblem& ml_prob) {
   vector < double > Jac;
   Jac.reserve(maxSize * maxSize);
 
-  if (assembleMatrix)
-    KK->zero(); // Set to zero all the entries of the Global Matrix
-    
+  if (assembleMatrix){
+    KK->zero(); }// Set to zero all the entries of the Global Matrix
+    RES->zero();
 int counter = 0;
   // element loop: each process loops only on the elements that owns
   for (int iel = msh->IS_Mts2Gmt_elem_offset[iproc]; iel < msh->IS_Mts2Gmt_elem_offset[iproc + 1]; iel++) {
