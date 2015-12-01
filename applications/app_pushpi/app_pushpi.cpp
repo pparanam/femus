@@ -17,7 +17,7 @@
 #include "GMVWriter.hpp"
 #include "LinearImplicitSystem.hpp"
 #include "NumericVector.hpp"
-
+#include "Files.hpp"
 
 using namespace femus;
 
@@ -26,13 +26,18 @@ double InitalValueU(const std::vector < double >& x) {
 }
 bool SetBoundaryCondition(const std::vector < double >& x, const char solName[], double& value, const int faceName, const double time) {
   bool dirichlet = true; //dirichlet
-  value = 0;
+  value = 1.*x[0];
 
 /*  if (faceName == 2)
     dirichlet = false;*/
 
   return dirichlet;
 }
+
+double InitialValueU(const std::vector < double >& x) {
+  return 7.*x[0];
+}
+
 void AssemblePoissonProblem(MultiLevelProblem& ml_prob);
 
 
@@ -40,13 +45,19 @@ int main(int argc, char** args) {
 
   // init Petsc-MPI communicator
   FemusInit mpinit(argc, args, MPI_COMM_WORLD);
-
+Files files; 
+        files.ConfigureRestart();
+        files.CheckIODirectories();
+        files.CopyInputFiles();
+        files.RedirectCout();
+	
+	
   // define multilevel mesh
   MultiLevelMesh mlMsh;
   double scalingFactor = 1.;
   // read coarse level mesh and generate finers level meshes
   //mlMsh.ReadCoarseMesh("./input/square.neu", "seventh", scalingFactor);
-  mlMsh.GenerateCoarseBoxMesh( 2,2,0,-0.5,0.5,-0.5,0.5,0.,0.,QUAD9,"seventh");
+  mlMsh.GenerateCoarseBoxMesh( 32,32,0,-0.5,0.5,-0.5,0.5,0.,0.,QUAD9,"seventh");
   
   
   
@@ -63,7 +74,7 @@ int main(int argc, char** args) {
   // add variables to mlSol
   mlSol.AddSolution("U", LAGRANGE, SERENDIPITY);
   
-  mlSol.Initialize("All");    // initialize all varaibles to zero
+  mlSol.Initialize("U",InitialValueU);    // initialize all varaibles to zero
 // attach the boundary condition function and generate boundary data
       mlSol.AttachSetBoundaryConditionFunction(SetBoundaryCondition);
       mlSol.GenerateBdc("U");
@@ -97,7 +108,7 @@ int main(int argc, char** args) {
   variablesToBePrinted.push_back("U");
   
   VTKWriter vtkIO(&mlSol);
-  vtkIO.write(DEFAULT_OUTPUTDIR, "biquadratic", variablesToBePrinted);
+  vtkIO.write(files.GetOutputPath(), "biquadratic", variablesToBePrinted);
 
   GMVWriter gmvIO(&mlSol);
   variablesToBePrinted.push_back("all");
